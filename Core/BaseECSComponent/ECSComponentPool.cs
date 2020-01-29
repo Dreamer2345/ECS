@@ -4,35 +4,38 @@ using System.Collections.Generic;
 
 namespace ECS.Core.BaseECSComponent
 {
-    public class ECSComponentPool<T> where T : IBaseECSComponent
+    public sealed class ECSComponentPool
     {
-        public Type ComponentPoolType = typeof(T);
-        List<Tuple<T, EntityHandle>> Components = new List<Tuple<T, EntityHandle>>();
+        public static int PoolCount = 0;
+        public Type ComponentType;
+        List<Tuple<object, ECSEntityHandle>> Components = new List<Tuple<object, ECSEntityHandle>>();
 
-        public void AddToEntity(T Component, EntityHandle entity)
+        public ECSComponentPool(Type type)
         {
-            entity.Components.Add(typeof(T));
+            ComponentType = type;
+            PoolCount++;
+        }
+
+        ~ECSComponentPool()
+        {
+            PoolCount--;
+        }
+
+        public void AddToEntity(object Component, ECSEntityHandle entity)
+        {
+            entity.Components.Add(ComponentType);
             Components.Add(Tuple.Create(Component, entity));
         }
 
-        public void RemoveFromEntity(EntityHandle entity)
+        public object GetFromEntity(ECSEntityHandle entity)
         {
-            entity.Components.Remove(typeof(T));
+            return Components.Find(x => x.Item2 == entity);
+        }
+
+        public void RemoveFromEntity(ECSEntityHandle entity)
+        {
+            entity.Components.Remove(ComponentType);
             Components.Remove(Components.Find(x => x.Item2 == entity));
         }
-
-        public T GetComponentFromEntity(EntityHandle entityHandle)
-        {
-            for (int i = 0; i < Components.Count; i++)
-            {
-                if (Components[i].Item2 == entityHandle)
-                {
-                    return Components[i].Item1;
-                }
-            }
-
-            return default;
-        }
-
     }
 }

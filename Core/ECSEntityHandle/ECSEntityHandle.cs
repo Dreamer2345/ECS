@@ -4,25 +4,25 @@ using System.Collections.Generic;
 
 namespace ECS.Core.entityHandle
 {
-    public class EntityHandle
+    public class ECSEntityHandle
     {
         public bool Disposed = false;
         public ulong ID { get; private set; }
         public List<Type> Components = new List<Type>();
 
-        public EntityHandle(ulong entityID)
+        public ECSEntityHandle(ulong entityID)
         {
             ID = entityID;
         }
 
-        public bool HasComponent<T>() where T : IBaseECSComponent
+        public bool HasComponent(object type)
         {
-            return Components.Contains(typeof(T));
+            return Components.Contains(type.GetType());
         }
 
         public override string ToString()
         {
-            string ComponentString = "Components\n";
+            string ComponentString = "Components:\n";
             
             foreach(Type i in Components)
             {

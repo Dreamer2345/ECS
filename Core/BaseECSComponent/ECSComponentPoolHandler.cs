@@ -19,7 +19,7 @@ namespace ECS.Core.BaseECSComponent
             {
                 int newID = EcsComponentPools.Count;
                 valuePairs.Add(typeof(T), newID);
-                EcsComponentPools.Add(new ECSComponentPool<T>());
+                EcsComponentPools.Add(new ECSComponentPool(typeof(T)));
                 return newID;
             }
         }
@@ -36,24 +36,24 @@ namespace ECS.Core.BaseECSComponent
             }
         }
 
-        public void AddComponent<T>(T component, EntityHandle entity) where T : IBaseECSComponent
+        public void AddComponent(object component, ECSEntityHandle entity)
         {
             Type componentType = component.GetType();
             if (valuePairs.ContainsKey(componentType))
             {
 
                 int ComponentPoolID = valuePairs[component.GetType()];
-                ((ECSComponentPool<T>)EcsComponentPools[ComponentPoolID]).AddToEntity(component, entity);
+                ((ECSComponentPool)EcsComponentPools[ComponentPoolID]).AddToEntity(component, entity);
             }
         }
 
-        public void RemoveComponent<T>(EntityHandle entity) where T : IBaseECSComponent
+        public void RemoveComponent(Type type,ECSEntityHandle entity)
         {
-            if (valuePairs.ContainsKey(typeof(T)))
+            if (valuePairs.ContainsKey(type))
             {
 
-                int ComponentPoolID = valuePairs[typeof(T)];
-                ((ECSComponentPool<T>)EcsComponentPools[ComponentPoolID]).RemoveFromEntity(entity);
+                int ComponentPoolID = valuePairs[type];
+                ((ECSComponentPool)EcsComponentPools[ComponentPoolID]).RemoveFromEntity(entity);
             }
         }
 
@@ -62,15 +62,15 @@ namespace ECS.Core.BaseECSComponent
             return valuePairs.ContainsKey(type);
         }
 
-        public ECSComponentPool<T> GetPool<T>() where T : IBaseECSComponent
+        public ECSComponentPool GetPool(Type type)
         {
-            if (HasPool(typeof(T)))
+            if (HasPool(type))
             {
-                throw new Exception("ComponentType:" + typeof(T) + " Doesent Exist in component pools");
+                throw new Exception("ComponentType:" + type + " Doesent Exist in component pools");
             }
 
-            int PoolID = valuePairs[typeof(T)];
-            return (ECSComponentPool<T>)EcsComponentPools[PoolID];
+            int PoolID = valuePairs[type];
+            return (ECSComponentPool)EcsComponentPools[PoolID];
         }
     }
 }

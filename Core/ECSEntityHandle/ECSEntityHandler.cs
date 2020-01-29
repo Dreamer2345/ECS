@@ -4,24 +4,32 @@ using System.Text;
 
 namespace ECS.Core.entityHandle
 {
-    public class EntityHandler
+    public class ECSEntityHandler
     {
-        List<EntityHandle> entitys = new List<EntityHandle>();
+        List<ECSEntityHandle> entitys = new List<ECSEntityHandle>();
         static Random rndgen = new Random();
 
-        public List<EntityHandle> GetEntitys()
+        public List<ECSEntityHandle> GetEntitys()
         {
             return entitys;
         }
 
-        public EntityHandle GetEntity(ulong ID)
+        public ECSEntityHandle GetEntityFromIndex(int Index)
+        {
+            if ((Index > 0) && (Index < entitys.Count))
+                return entitys[Index];
+            else
+                return null;
+        }
+
+        public ECSEntityHandle GetEntity(ulong ID)
         {
             return entitys.Find(x => x.ID == ID);
         }
 
         public void RemoveEntity(ulong ID)
         {
-            EntityHandle entity = entitys.Find(x => x.ID == ID);
+            ECSEntityHandle entity = entitys.Find(x => x.ID == ID);
             entity.Disposed = true;
             entitys.Remove(entity);
         }
@@ -31,7 +39,7 @@ namespace ECS.Core.entityHandle
             return entitys.Find(x => x.ID == ID) != null;
         }
 
-        public EntityHandle GetNewEntity()
+        public ECSEntityHandle GetNewEntity()
         {
             ulong NewID = 0;
             bool Found = false;
@@ -41,7 +49,7 @@ namespace ECS.Core.entityHandle
                 Found = !HasKey(NewID);
             }
 
-            EntityHandle newEntity = new EntityHandle(NewID);
+            ECSEntityHandle newEntity = new ECSEntityHandle(NewID);
             entitys.Add(newEntity);
             return newEntity;
         }
