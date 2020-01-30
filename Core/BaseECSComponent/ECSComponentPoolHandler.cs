@@ -17,9 +17,9 @@ namespace ECS.Core.BaseECSComponent
             }
             else
             {
-                int newID = EcsComponentPools.Count;
+                int newID = (int)EcsComponentPools.Count;
                 valuePairs.Add(typeof(T), newID);
-                EcsComponentPools.Add(new ECSComponentPool(typeof(T)));
+                EcsComponentPools.Add(new ECSComponentPool(typeof(T), this));
                 return newID;
             }
         }
@@ -41,7 +41,7 @@ namespace ECS.Core.BaseECSComponent
             Type componentType = component.GetType();
             if (valuePairs.ContainsKey(componentType))
             {
-
+                
                 int ComponentPoolID = valuePairs[component.GetType()];
                 ((ECSComponentPool)EcsComponentPools[ComponentPoolID]).AddToEntity(component, entity);
             }
@@ -60,6 +60,15 @@ namespace ECS.Core.BaseECSComponent
         public bool HasPool(Type type)
         {
             return valuePairs.ContainsKey(type);
+        }
+
+        public int GetID(Type type)
+        {
+            if (HasPool(type))
+            {
+                return valuePairs[type];
+            }
+            return -1;
         }
 
         public ECSComponentPool GetPool(Type type)

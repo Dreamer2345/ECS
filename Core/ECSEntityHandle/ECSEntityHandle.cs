@@ -1,4 +1,5 @@
 ﻿using ECS.Core.BaseECSComponent;
+using ECS.Core.GrowList;
 using System;
 using System.Collections.Generic;
 
@@ -8,7 +9,7 @@ namespace ECS.Core.entityHandle
     {
         public bool Disposed = false;
         public ulong ID { get; private set; }
-        public List<Type> Components = new List<Type>();
+        public GrowList<Type> Components = new GrowList<Type>();
 
         public ECSEntityHandle(ulong entityID)
         {
