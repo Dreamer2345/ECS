@@ -8,6 +8,7 @@ namespace ECS.Core.BaseECSComponent
     {
         public static int PoolCount = 0;
         public Type ComponentType;
+        Dictionary<ECSComponentPool, int> EntityToComponent = new Dictionary<ECSComponentPool, int>();
         List<Tuple<object, ECSEntityHandle>> Components = new List<Tuple<object, ECSEntityHandle>>();
 
         public ECSComponentPool(Type type)

@@ -19,7 +19,7 @@ namespace ECS.Core.entityHandle
             if ((Index > 0) && (Index < entitys.Count))
                 return entitys[Index];
             else
-                return null;
+                throw new Exception("Index can not be out of range");
         }
 
         public ECSEntityHandle GetEntity(ulong ID)
