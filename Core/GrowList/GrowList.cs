@@ -69,10 +69,17 @@ namespace ECS.Core.GrowList
         }
         public void GrowArray(uint NumberOfElements)
         {
-            uint NewSize = NumberOfElements + CurrentSize;
+            ulong NewSize = NumberOfElements + CurrentSize;
+
+            if (NewSize > uint.MaxValue)
+                NewSize = uint.MaxValue;
+
+            if(CurrentSize == NewSize)
+                return;
+
             Array.Resize(ref Data, (int)NewSize);
-            FreeIndexes(CurrentSize, NewSize, true);
-            CurrentSize = NewSize;
+            FreeIndexes(CurrentSize, (uint)NewSize, true);
+            CurrentSize = (uint)NewSize;
         }
         public void Add(T Object)
         {
@@ -102,5 +109,11 @@ namespace ECS.Core.GrowList
             FreeIndexes(0, CurrentSize, true);
         }
         
+        ~GrowList()
+        {
+            FreeValues.Clear();
+            for (uint i = 0; i < Data.Length; i++)
+                Data[i].Data = default;
+        }
     }
 }
