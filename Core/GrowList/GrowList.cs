@@ -9,7 +9,7 @@ namespace ECS.Core.GrowList
         public T Data;
         bool Active = false;
 
-        public bool IsActive { get { return Active; }  set { Active = value; } }
+        public bool IsActive { get { return Active; } set { Active = value; } }
 
         public GrowListElement(T Data)
         {
@@ -17,48 +17,32 @@ namespace ECS.Core.GrowList
         }
     }
 
-    public class GrowList<T> : IEnumerable<T>
+    public class GrowList<T> : IEnumerable, IEnumerable<T>
     {
         bool OverideData = false;
-        const int BaseCapSize = 100;  
+        const int BaseCapSize = 100;
         int CurrentSize;
         int ArrayAllocIncrement { get; set; } = 100;
         List<int> FreeValues = new List<int>();
         List<int> TakenValues = new List<int>();
         GrowListElement<T>[] Data;
-        
-        public void Clear()
+
+
+
+        /*Array Helper Functions*/
+        private bool CheckIndexCorrect(int Index, bool ReadWrite = true)
         {
-            for (int i = 0; i < Data.Length; i++)
-                Remove(i);
-            FreeIndexes(0, CurrentSize);
-            TakenValues.Clear();
-        }
-        public T GetValue(int Index)
-        {
-            if ((Index >= 0) && (Index < CurrentSize))
+            if ((Index < 0) || (Index > CurrentSize))
             {
-                if (Data[Index].IsActive)
-                {
-                    return Data[Index].Data;
-                }
-                else
-                {
-                    return default;
-                }
+                throw new IndexOutOfRangeException("Index for Array was out of range Range[0:" + CurrentSize + "] Got [" + Index + "]");
             }
-            return default;
-        }
-        public void Recycle(int Index)
-        {
-            if((Index >= 0)&&(Index < CurrentSize))
+
+            if (!Data[Index].IsActive && ReadWrite)
             {
-                if (Data[Index].IsActive)
-                {
-                    Remove(Index);
-                    FreeIndex(Index);
-                }
+                throw new ArgumentException("Index for object in array was inactive or destroyed?");
             }
+
+            return true;
         }
         private void FreeIndex(int Value, bool Overide = false)
         {
@@ -71,38 +55,101 @@ namespace ECS.Core.GrowList
         private void FreeIndexes(int StartVal, int EndVal, bool Overide = false)
         {
             for (int i = StartVal; i < EndVal; i++)
+            {
                 FreeIndex(i, Overide);
+            }
         }
         private void GrowArray(int NumberOfElements)
         {
-            ulong NewSize = (ulong)(NumberOfElements + CurrentSize);
+            int NewSize = (int)(NumberOfElements + CurrentSize);
 
             if (NewSize > int.MaxValue)
+            {
                 NewSize = int.MaxValue;
+            }
 
-            if(CurrentSize == (int)NewSize)
+            if (CurrentSize == (int)NewSize)
+            {
                 return;
+            }
 
             Array.Resize(ref Data, (int)NewSize);
             FreeIndexes(CurrentSize, (int)NewSize, true);
             CurrentSize = (int)NewSize;
         }
-        public void Add(T Object)
+
+        /*End Array Helper Functions*/
+
+        /*Functions for interacting with the growList*/
+        public int Count
+        {
+            get => TakenValues.Count;
+        }
+        public T this[int index]
+        {
+            get
+            {
+                return GetValue(index);
+            }
+            set
+            {
+                SetValue(index, value);
+            }
+        }
+        public void Clear()
+        {
+            for (int i = 0; i < Data.Length; i++)
+            {
+                RemoveIndex(i);
+            }
+
+            FreeIndexes(0, CurrentSize);
+            TakenValues.Clear();
+        }
+        public void SetValue(int Index, T value)
+        {
+            CheckIndexCorrect(Index);
+            Data[Index].Data = value;
+        }
+        public T GetValue(int Index)
+        {
+            CheckIndexCorrect(Index);
+            return Data[Index].Data;
+        }
+        public void Recycle(int Index)
+        {
+            CheckIndexCorrect(Index, false);
+            RemoveIndex(Index);
+            FreeIndex(Index);
+        }
+        public int Add(T Object)
         {
             if (FreeValues.Count == 0)
+            {
                 GrowArray(ArrayAllocIncrement);
+            }
+
             int NewIndex = FreeValues[0];
             Data[NewIndex] = new GrowListElement<T>(Object) { IsActive = true };
             FreeValues.RemoveAt(0);
             TakenValues.Add(NewIndex);
+            return NewIndex;
         }
-        public void Remove(int Index)
+        public void RemoveIndex(int Index)
         {
+            CheckIndexCorrect(Index,false);
             Data[Index].IsActive = false;
-            if(OverideData)
+            if (OverideData)
+            {
                 Data[Index].Data = default;
-            if (TakenValues.Contains(Index))
-                FreeIndex(Index);
+            }
+
+            FreeIndex(Index);
+        }       
+        public void Remove(T Object)
+        {
+            Contains(Object, out int Index);
+            RemoveIndex(Index);
         }
         public bool Contains(T Element)
         {
@@ -121,95 +168,123 @@ namespace ECS.Core.GrowList
             Index = 0;
             return false;
         }
+        public bool Has(Predicate<T> Where)
+        {
+            for (int i = 0; i < TakenValues.Count; i++)
+            {
+                if (Where.Invoke(Data[TakenValues[i]].Data))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
         public T Find(Predicate<T> Where)
         {
             for (int i = 0; i < TakenValues.Count; i++)
-                if (Where.Invoke(Data[TakenValues[(int)i]].Data))
-                    return Data[TakenValues[(int)i]].Data;
+            {
+                if (Where.Invoke(Data[TakenValues[i]].Data))
+                {
+                    return Data[TakenValues[i]].Data;
+                }
+            }
+
             return default;
         }
         public int FindIndex(Predicate<T> Where)
         {
             for (int i = 0; i < TakenValues.Count; i++)
-                if (Where.Invoke(Data[TakenValues[(int)i]].Data))
+            {
+                if (Where.Invoke(Data[TakenValues[i]].Data))
+                {
                     return i;
-            return default;
+                }
+            }
+
+            return -1;
         }
 
-        public IEnumerator<T> GetEnumerator()
-        {
-            throw new NotImplementedException();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
-
+        
+        /*Initialization functions*/
         public GrowList()
         {
             Data = new GrowListElement<T>[BaseCapSize];
-            CurrentSize = (int)Data.Length;
+            CurrentSize = Data.Length;
             FreeIndexes(0, CurrentSize, true);
         }
         public GrowList(int ArrayCapSize)
         {
             Data = new GrowListElement<T>[ArrayCapSize];
-            CurrentSize = (int)Data.Length;
+            CurrentSize = Data.Length;
             FreeIndexes(0, CurrentSize, true);
         }
         public GrowList(int ArrayCapSize, int ArrayMemAllocSize)
         {
             ArrayAllocIncrement = ArrayMemAllocSize;
             Data = new GrowListElement<T>[ArrayCapSize];
-            CurrentSize = (int)Data.Length;
+            CurrentSize = Data.Length;
             FreeIndexes(0, CurrentSize, true);
         }
         ~GrowList()
         {
             FreeValues.Clear();
         }
-    }
 
-    public class GrowlistEnumerator<T> : IEnumerator
-    {
 
-        object IEnumerator.Current
+        /*Enumarator handling*/
+        IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
-            get
+            return GetEnumerator();
+        }
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+        public GrowlistEnumerator GetEnumerator()
+        {
+            return new GrowlistEnumerator(Data, TakenValues.ToArray());
+        }
+        public class GrowlistEnumerator : IEnumerator<T>, IEnumerator
+        {
+            public T Current
             {
-                return Current;
+                get
+                {
+                    return Elements[DataLocations[CurrentIndex]].Data;
+                }
+            }
+
+            T IEnumerator<T>.Current => Current;
+            object IEnumerator.Current => Current; 
+
+            int CurrentIndex = -1;
+            GrowListElement<T>[] Elements;
+            int[] DataLocations;
+
+            public GrowlistEnumerator(GrowListElement<T>[] listElements, int[] DataLocations)
+            {
+                CurrentIndex = -1;
+                Elements = listElements;
+                this.DataLocations = DataLocations;
+            }
+
+            public bool MoveNext()
+            {
+                CurrentIndex++;
+                return (CurrentIndex < DataLocations.Length);
+            }
+
+            public void Reset()
+            {
+                CurrentIndex = 0;
+            }
+
+            public void Dispose()
+            {
+
             }
         }
 
-        public GrowListElement<T> Current
-        {
-            get
-            {
-                return Elements[DataLocations[(int)CurrentIndex]];
-            }
-        }
-
-        int CurrentIndex = 0;
-        GrowListElement<T>[] Elements;
-        List<int> DataLocations;
-
-        public GrowlistEnumerator(GrowListElement<T>[] listElements, List<int> DataLocations)
-        {
-            Elements = listElements;
-            this.DataLocations = DataLocations;
-        }
-
-        public bool MoveNext()
-        {
-            CurrentIndex++;
-            return (CurrentIndex < DataLocations.Count);
-        }
-
-        public void Reset()
-        {
-            CurrentIndex = 0;
-        }
     }
-
 }

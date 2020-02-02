@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ECS.Core.GrowList;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -6,51 +7,51 @@ namespace ECS.Core.entityHandle
 {
     public class ECSEntityHandler
     {
-        List<ECSEntityHandle> entitys = new List<ECSEntityHandle>();
-        static Random rndgen = new Random();
+        GrowList<ECSEntityHandle> entitys = new GrowList<ECSEntityHandle>(1000,1000);
 
-        public List<ECSEntityHandle> GetEntitys()
+        public int EntityCount()
+        {
+            return entitys.Count;
+        }
+
+        public GrowList<ECSEntityHandle> GetEntitys()
         {
             return entitys;
         }
 
         public ECSEntityHandle GetEntityFromIndex(int Index)
         {
-            if ((Index > 0) && (Index < entitys.Count))
-                return entitys[Index];
-            else
-                throw new Exception("Index can not be out of range");
+            return entitys[Index];
         }
 
-        public ECSEntityHandle GetEntity(ulong ID)
+        public ECSEntityHandle GetEntity(int ID)
         {
             return entitys.Find(x => x.ID == ID);
         }
 
-        public void RemoveEntity(ulong ID)
+        public void RemoveEntity(int ID)
         {
-            ECSEntityHandle entity = entitys.Find(x => x.ID == ID);
-            entity.Disposed = true;
-            entitys.Remove(entity);
+            ECSEntityHandle Entity = entitys.Find(x => x.ID == ID);
+            Entity.Disposed = true;
+            entitys.Remove(Entity);
         }
 
-        public bool HasKey(ulong ID)
+        public void RemoveEntity(ECSEntityHandle Entity)
         {
-            return entitys.Find(x => x.ID == ID) != null;
+            Entity.Disposed = true;
+            entitys.Remove(Entity);
+        }
+
+        public bool HasKey(int ID)
+        {
+            return entitys.Has(x => x.ID == ID);
         }
 
         public ECSEntityHandle GetNewEntity()
         {
-            ulong NewID = 0;
-            bool Found = false;
-            while (!Found)
-            {
-                NewID = (ulong)((rndgen.Next() << 32) + rndgen.Next());
-                Found = !HasKey(NewID);
-            }
-
-            ECSEntityHandle newEntity = new ECSEntityHandle(NewID);
-            entitys.Add(newEntity);
+            ECSEntityHandle newEntity = new ECSEntityHandle(0);
+            int EntityID = entitys.Add(newEntity);
+            newEntity.SetID(EntityID);
             return newEntity;
         }
     }

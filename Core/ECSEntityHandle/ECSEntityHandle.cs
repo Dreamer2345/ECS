@@ -8,26 +8,37 @@ namespace ECS.Core.entityHandle
     public class ECSEntityHandle
     {
         public bool Disposed = false;
-        public ulong ID { get; private set; }
-        public GrowList<Type> Components = new GrowList<Type>();
+        public int ID { get; private set; }
+        public GrowList<Tuple<Type, int>> Components = new GrowList<Tuple<Type, int>>();
 
-        public ECSEntityHandle(ulong entityID)
+        public void SetID(int ID)
+        {
+            this.ID = ID;
+        }
+
+        public ECSEntityHandle(int entityID)
         {
             ID = entityID;
         }
 
         public bool HasComponent(object type)
         {
-            return Components.Contains(type.GetType());
+            return Components.Has(x => x.Item1 == type.GetType());
+        }
+
+        public int GetComponentID(object type)
+        {
+            return Components.Find(x => x.Item1 == type.GetType()).Item2;
         }
 
         public override string ToString()
         {
             string ComponentString = "Components:\n";
+
             
-            foreach(Type i in Components)
+            foreach(var i in Components)
             {
-                ComponentString += i.Name + "\n";
+                ComponentString += "    Name:"+i.Item1.Name+" ID:"+i.Item2+ "\n";
             }
 
             return "ID:" + ID + "\n" + ComponentString;

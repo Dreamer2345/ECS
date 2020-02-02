@@ -11,15 +11,24 @@ namespace ECS.Core.ECS
         ECSEntityHandler entityHandler = new ECSEntityHandler();
         ECSSystemHandler systemHandler = new ECSSystemHandler();
 
+
         public ECSEntityHandle GetNewEntity()
         {
             return entityHandler.GetNewEntity();
         }
 
-        public void RemoveEntity(ulong ID)
+        public void RemoveEntity(int ID)
         {
+            RemoveEntity(entityHandler.GetEntity(ID));
+            
+        }
 
-            entityHandler.RemoveEntity(ID);
+        public void RemoveEntity(ECSEntityHandle entity)
+        {
+            foreach (Tuple<Type, int> i in entity.Components) {
+                poolHandler.RemoveComponent(i.Item1, entity);
+            }
+            entityHandler.RemoveEntity(entity);
         }
 
         public void RegisterNewComponentType<T>() where T : IBaseECSComponent
@@ -34,39 +43,37 @@ namespace ECS.Core.ECS
 
         public void AddComponent(object component, ECSEntityHandle entity)
         {
-            if (entityHandler.HasKey(entity.ID))
-                if(!entity.HasComponent(component))
-                    poolHandler.AddComponent(component, entity);
-                else
-                    throw new Exception("Cannot add component from entity: Entity already has component of type: "+ component.GetType().Name);
-            else
+            if (!entityHandler.HasKey(entity.ID))
                 throw new Exception("Cannot add component from entity: Invalid Entity ID");
+            if (entity.HasComponent(component))
+                throw new Exception("Cannot add component from entity: Entity already has component of type: " + component.GetType().Name);
+
+
+
+            poolHandler.AddComponent(component, entity);
         }
 
-        public void RemoveComponent(Type type,ECSEntityHandle entity) 
+        public void RemoveComponent(Type type, ECSEntityHandle entity)
         {
             if (entityHandler.HasKey(entity.ID))
-                if(entity.HasComponent(type))
-                    poolHandler.RemoveComponent(type,entity);
-                else
-                    throw new Exception("Cannot remove component from entity: Entity does not have component of type: " + type.Name);
-            else
                 throw new Exception("Cannot remove component from entity: Invalid Entity ID");
+
+            if (!entity.HasComponent(type))
+                throw new Exception("Cannot remove component from entity: Entity does not have component of type: " + type.Name);
+
+
+            poolHandler.RemoveComponent(type, entity);
         }
 
         public object GetComponent(Type type, ECSEntityHandle entity)
         {
-            if (entityHandler.HasKey(entity.ID))
-            {
-                if (entity.HasComponent(type))
-                {
-                    return poolHandler.GetPool(type).GetFromEntity(entity);
-                }
-                else
-                    throw new Exception("Entity does not have that component type:"+ type.Name);
-            }
-            throw new Exception("Cannot Find component from entity: Invalid Entity ID");
+            if (!entityHandler.HasKey(entity.ID))
+                throw new Exception("Cannot Find component from entity: Invalid Entity ID");
 
+            if (!entity.HasComponent(type))
+                throw new Exception("Entity does not have that component type:" + type.Name);
+
+            return poolHandler.GetPool(type).GetFromEntity(entity);
         }
 
         public ECSEntityHandle GetEntityByIndex(int index)
@@ -77,9 +84,12 @@ namespace ECS.Core.ECS
         public override string ToString()
         {
             string str = "";
-            foreach (ECSEntityHandle i in entityHandler.GetEntitys())
-                str += i.ToString();
+            
 
+
+            str += "EntityCount:"+entityHandler.EntityCount() + "\n";
+            str += "ComponentPoolCount:" + poolHandler.GetPoolCount() + "\n";
+            str += "ComponentCount:" + poolHandler.GetComponentCount() + "\n";
             return str;
         }
     }

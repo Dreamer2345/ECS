@@ -11,7 +11,7 @@ namespace ECS.Core.BaseECSComponent
         public static int PoolCount = 0;
         public Type ComponentType;
         //Dictionary<ECSComponentPool, int> EntityToComponent = new Dictionary<ECSComponentPool, int>();
-        GrowList<Tuple<object, ECSEntityHandle>> Components = new GrowList<Tuple<object, ECSEntityHandle>>();
+        GrowList<Tuple<object, ECSEntityHandle>> Components = new GrowList<Tuple<object, ECSEntityHandle>>(1000,1000);
 
         public ECSComponentPool(Type type,ECSComponentPoolHandler Parent)
         {
@@ -30,9 +30,9 @@ namespace ECS.Core.BaseECSComponent
         }
 
         public void AddToEntity(object Component, ECSEntityHandle entity)
-        {
-            entity.Components.Add(ComponentType);
-            Components.Add(Tuple.Create(Component, entity));
+        {   
+            int Index = Components.Add(Tuple.Create(Component, entity));
+            entity.Components.Add(new Tuple<Type, int>(ComponentType, Index));
         }
 
         public object GetFromEntity(ECSEntityHandle entity)
@@ -42,9 +42,19 @@ namespace ECS.Core.BaseECSComponent
 
         public void RemoveFromEntity(ECSEntityHandle entity)
         {
-            entity.Components.Remove(Parent.GetID(ComponentType));
-            int Index = Components.FindIndex(x => x.Item2 == entity); 
+            Tuple<Type, int> componentIDPair = entity.Components.Find(x => x.Item1 == ComponentType);
+            Components.Recycle(componentIDPair.Item2); 
+        }
+
+        public void RemoveFromEntityID(int ID)
+        {
+            int Index = Components.FindIndex(x => x.Item2.ID == ID);
             Components.Recycle(Index);
+        }
+
+        public int GetComponentCount()
+        {
+            return Components.Count;
         }
     }
 }

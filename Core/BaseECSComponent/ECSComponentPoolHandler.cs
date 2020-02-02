@@ -1,4 +1,5 @@
 ﻿using ECS.Core.entityHandle;
+using ECS.Core.GrowList;
 using System;
 using System.Collections.Generic;
 
@@ -7,7 +8,7 @@ namespace ECS.Core.BaseECSComponent
     public class ECSComponentPoolHandler
     {
         Dictionary<Type, int> valuePairs = new Dictionary<Type, int>();
-        List<object> EcsComponentPools = new List<object>();
+        GrowList<object> EcsComponentPools = new GrowList<object>();
 
         public int RegisterNewComponentPool<T>() where T : IBaseECSComponent
         {
@@ -16,10 +17,9 @@ namespace ECS.Core.BaseECSComponent
                 throw new Exception("ComponentType:" + typeof(T) + " Already Exists in component pools");
             }
             else
-            {
-                int newID = (int)EcsComponentPools.Count;
+            {    
+                int newID = EcsComponentPools.Add(new ECSComponentPool(typeof(T), this));
                 valuePairs.Add(typeof(T), newID);
-                EcsComponentPools.Add(new ECSComponentPool(typeof(T), this));
                 return newID;
             }
         }
@@ -81,5 +81,21 @@ namespace ECS.Core.BaseECSComponent
             int PoolID = valuePairs[type];
             return (ECSComponentPool)EcsComponentPools[PoolID];
         }
+
+        public int GetPoolCount()
+        {
+            return EcsComponentPools.Count;
+        }
+
+        public int GetComponentCount()
+        {
+            int Tally = 0;
+            foreach(ECSComponentPool i in EcsComponentPools)
+            {
+                Tally += i.GetComponentCount();
+            }
+            return Tally;
+        }
+
     }
 }
