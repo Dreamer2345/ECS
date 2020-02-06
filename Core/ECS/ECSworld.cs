@@ -81,6 +81,11 @@ namespace ECS.Core.ECS
             return entityHandler.GetEntityFromIndex(index);
         }
 
+        public void Update(float Delta)
+        {
+            //systemHandler
+        }
+
         public override string ToString()
         {
             string str = "";

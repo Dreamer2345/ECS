@@ -81,6 +81,14 @@ namespace ECS.Core.GrowList
         /*End Array Helper Functions*/
 
         /*Functions for interacting with the growList*/
+        public T[] ToArray()
+        {
+            T[] DatArrayOut = new T[TakenValues.Count];
+            for (int i = 0; i < TakenValues.Count; i++)
+                DatArrayOut[i] = Data[TakenValues[i]].Data;
+            return DatArrayOut;
+        }
+        
         public int Count
         {
             get => TakenValues.Count;
